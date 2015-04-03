@@ -1,8 +1,37 @@
 == Readme ==
-This readme briefly explains how to use the codes. Our DTW code requires four parameters in this syntax: 	
-    UCR_DTW   Data_File  Query_File  M   R		 
-    or
-    UCR_ED    Data_File  Query_File  M   
+
+This is a modification of the UCR suite for handling efficiently
+handling 2 dimensional time series, based on the code of "Thanawin
+Rakthanmanon, Bilson Campana, Abdullah Mueen, Gustavo Batista, Brandon
+Westover, Qiang Zhu, Jesin Zakaria, Eamonn Keogh (2012). Searching and
+Mining Trillions of Time Series Subsequences under Dynamic Time
+Warping SIGKDD 2012.".
+
+The usage is similar, but the input is expected to be a 2-dimensional
+time series instead of a 1 dimensional. The input query and database
+should have two columns, one for each time series dimension.
+
+query.txt
+1 1
+2 2
+3 3
+5 5
+
+db.txt
+3 3
+3 5
+5 6
+6 7
+
+    ./ucr_dtw query.txt db.txt 4 0.05
+
+Using the supplied `run.sh` one can run multiple queries over a single database.
+
+== Original Readme ==
+
+This readme briefly explains how to use the codes. Our DTW code
+requires four parameters in this syntax: UCR_DTW Data_File Query_File
+M R or UCR_ED Data_File Query_File M
 		 
 Input Explanation,
     UCR_DTW (or UCR_ED):  the executable file of our algorithm
