@@ -602,7 +602,7 @@ int main(  int argc , char *argv[] )
 
     meanA = exA/m;
     stdA = ex2A/m;
-    std = sqrt(std-mean*mean);
+    stdA = sqrt(stdA-meanA*meanA);
     for( i = 0 ; i < m ; i++ ) {
          q[i] = (q[i] - mean)/std;
          qA[i] = (qA[i] - meanA)/stdA;
