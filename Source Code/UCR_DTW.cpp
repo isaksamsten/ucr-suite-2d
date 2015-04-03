@@ -279,113 +279,6 @@ double lb_keogh_data_cumulative(int* order, double *tz, double *qo, double *cb, 
     return lb;
 }
 
-struct dtw_distance {
-  double d1, d2;
-};
-
-dtw_distance dtw(double* A1, double* A2, double* B1, double* B2,
-           double* cb1, double* cb2, int m, int r,
-           double bsf1 = INF, double bsf2 = INF) {
-  double *cost1;
-  double *cost2;
-  double *cost_prev1;
-  double *cost_prev2;
-  double *cost_tmp1;
-  double *cost_tmp2;
-
-  int i, j, k;
-  double x1, x2, y1, y2, z1, z2, min_cost1, min_cost2;
-
-  cost1 = (double*)malloc(sizeof(double)*(2*r+1));
-  cost2 = (double*)malloc(sizeof(double)*(2*r+1));
-  cost_prev1 = (double*)malloc(sizeof(double)*(2*r+1));
-  cost_prev2 = (double*)malloc(sizeof(double)*(2*r+1));
-  for(k=0; k<2*r+1; k++) {
-    cost1[k] = INF;
-    cost2[k] = INF;
-    cost_prev1[k] = INF;
-    cost_prev2[k] = INF;
-  }
-
-  for(i = 0; i < m; ++i) {
-    k = max(0, r - i);
-    min_cost1 = INF;
-    min_cost2 = INF;
-    
-    for(j = max(0, i - r); j <= min(m - 1, i + r); ++j, ++k) {
-      if(i == 0 && j == 0) {
-        cost1[k] = dist(A1[0], B1[0]);
-        cost2[k] = dist(A2[0], B2[0]);
-        min_cost1 = cost1[k];
-        min_cost2 = cost2[k];
-        continue;
-      }
-
-      if(j - 1 < 0 || k - 1 < 0) {
-        y1 = INF;
-        y2 = INF;
-      } else {
-        y1 = cost1[k - 1];
-        y2 = cost2[k - 1];
-      }
-
-      if(i - 1 < 0 || k + 1 > 2 * r) {
-        x1 = INF;
-        x2 = INF;
-      } else {
-        x1 = cost_prev1[k + 1];
-        x2 = cost_prev2[k + 1];
-      }
-
-      if(i - 1 < 0 || k + 1 > 2 * r) {
-        z1 = INF;
-        z2 = INF;
-      } else {
-        z1 = cost_prev1[k];
-        z2 = cost_prev2[k];
-      }
-
-      cost1[k] = min(min(x1,y1), z1) + dist(A1[i], B1[j]);
-      cost2[k] = min(min(x2,y2), z2) + dist(A2[i], B2[j]);
-
-      if(cost1[k] < min_cost1 && cost2[k] < min_cost2) {
-        min_cost1 = cost1[k];
-        min_cost2 = cost2[k];
-      }
-    }
-    if(i + r < m - 1
-       && min_cost1 + cb1[i+r+1] >= bsf1
-       && min_cost2 + cb2[i+r+1] >= bsf2) {
-      free(cost1);
-      free(cost2);
-      free(cost_prev1);
-      free(cost_prev2);
-      dtw_distance d;
-      d.d1 = min_cost1;
-      d.d2 = min_cost2;
-      return d;
-    }    
-    
-    cost_tmp1 = cost1;
-    cost_tmp2 = cost2;
-    cost1 = cost_prev1;
-    cost2 = cost_prev2;
-    cost_prev1 = cost_tmp1;
-    cost_prev2 = cost_tmp2;
-  }
-  --k;
-  double final_dtw1 = cost_prev1[k];
-  double final_dtw2 = cost_prev2[k];
-  free(cost1);
-  free(cost2);
-  free(cost_prev1);
-  free(cost_prev2);
-  dtw_distance d;
-  d.d1 = final_dtw1;
-  d.d2 = final_dtw2;
-  return d;
-}
-
 /// Calculate Dynamic Time Wrapping distance
 /// A,B: data and query, respectively
 /// cb : cummulative bound used for early abandoning
@@ -783,7 +676,7 @@ int main(  int argc , char *argv[] )
       } else {
         for(k=0; k<m-1; k++) {
           buffer[k] = buffer[EPOCH-m+1+k];
-          bufferA[k] = buffer[EPOCH-m+1+k];
+          bufferA[k] = bufferA[EPOCH-m+1+k];
         }
       }
 
@@ -840,7 +733,7 @@ int main(  int argc , char *argv[] )
             std = ex2/m;
             stdA = ex2A/m;
             std = sqrt(std-mean*mean);
-            stdA = sqrt(stdA - mean*mean);
+            stdA = sqrt(stdA - meanA*meanA);
             
             /// compute the start location of the data in the current circular array, t
             j = (i+1)%m;
@@ -903,6 +796,8 @@ int main(  int argc , char *argv[] )
                   double distA = INF;
                   if(dist < bsf) {
                     distA = dtw(tzA, qA, cbA, m, r, bsfA);
+                  } else {
+                    distA = INF;
                   }
                   if( dist < bsf && distA < bsfA ) {
                     /// Update bsf
@@ -921,6 +816,8 @@ int main(  int argc , char *argv[] )
             /// Reduce obsolute points from sum and sum square
             ex -= t[j];
             ex2 -= t[j]*t[j];
+            exA -= tA[j];
+            ex2A -= tA[j]*tA[j];
           }
         }
         
@@ -942,9 +839,6 @@ int main(  int argc , char *argv[] )
     free(uo);
     free(lo);
     free(qo);
-    free(cb);
-    free(cb1);
-    free(cb2);
     free(tz);
     free(t);
     free(l_d);
